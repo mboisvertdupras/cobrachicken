@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -13,7 +14,7 @@ return new class extends Migration
     {
         Schema::create('users', function (Blueprint $table) {
             $table->id();
-            $table->string('username', 15)->unique();
+            $table->string('username', 15);
             $table->string('email')->unique();
             $table->integer('karma')->default(1);
             $table->text('about')->nullable();
@@ -22,6 +23,8 @@ return new class extends Migration
             $table->rememberToken();
             $table->timestamps();
         });
+
+        DB::statement('create unique index users_username_lower_unique on users (lower(username))');
 
         Schema::create('password_reset_tokens', function (Blueprint $table) {
             $table->string('email')->primary();

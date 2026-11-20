@@ -20,7 +20,7 @@ class UserFactory extends Factory
     public function definition(): array
     {
         return [
-            'username' => fake()->unique()->regexify('[a-z][a-z0-9_]{4,11}'),
+            'username' => Str::limit(Str::replace('.', '_', fake()->unique()->userName()), 15, ''),
             'email' => fake()->unique()->safeEmail(),
             'email_verified_at' => now(),
             'password' => static::$password ??= Hash::make('password'),

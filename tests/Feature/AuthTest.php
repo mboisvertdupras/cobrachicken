@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\User;
+use Illuminate\Database\UniqueConstraintViolationException;
 
 it('logs in by username', function () {
     $user = User::factory()->create(['username' => 'goose']);
@@ -39,6 +40,34 @@ it('rejects invalid usernames', function (string $username) {
         'password_confirmation' => 'a-long-password',
     ])->assertSessionHasErrors(['username' => 'Usernames are 2 to 15 letters, digits, dashes or underscores.']);
 })->with(['g', 'has space', 'way_too_long_username']);
+
+it('rejects a username that differs from an existing one only by case', function () {
+    User::factory()->create(['username' => 'demo']);
+
+    $this->post('/register', [
+        'username' => 'Demo',
+        'email' => 'goose@example.com',
+        'password' => 'a-long-password',
+        'password_confirmation' => 'a-long-password',
+    ])->assertSessionHasErrors(['username' => 'The username has already been taken.']);
+
+    $this->assertGuest();
+    expect(User::count())->toBe(1);
+});
+
+it('logs in with a username in a different case', function () {
+    $user = User::factory()->create(['username' => 'demo']);
+
+    $this->post('/login', ['username' => 'DEMO', 'password' => 'password'])->assertRedirect('/');
+
+    $this->assertAuthenticatedAs($user);
+});
+
+it('enforces case-insensitive username uniqueness in the database', function () {
+    User::factory()->create(['username' => 'demo']);
+
+    User::factory()->create(['username' => 'DEMO']);
+})->throws(UniqueConstraintViolationException::class);
 
 it('shows login and create account forms on the login page', function () {
     $this->get('/login')->assertOk()->assertSee('Create Account');

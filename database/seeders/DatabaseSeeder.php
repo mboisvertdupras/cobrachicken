@@ -13,6 +13,11 @@ use Illuminate\Support\Str;
 
 class DatabaseSeeder extends Seeder
 {
+    private const USERNAMES = [
+        'maple_dev', 'prairiegirl', 'bluenoser', 'habsfan', 'yvr_commuter',
+        'loonie_toonie', 'timbits4life', 'canuck_coder', 'northof60', 'rockpicker',
+    ];
+
     /**
      * @var list<array{0: string, 1: ?Province, 2: bool}>
      */
@@ -104,7 +109,9 @@ class DatabaseSeeder extends Seeder
     {
         $toggleVote = new ToggleVote;
 
-        $users = User::factory(10)->create()->push(
+        $users = collect(self::USERNAMES)->map(
+            fn (string $username): User => User::factory()->create(['username' => $username]),
+        )->push(
             User::factory()->create(['username' => 'demo', 'email' => 'demo@example.com']),
         );
 

@@ -3,6 +3,7 @@
 namespace App\Actions\Fortify;
 
 use App\Models\User;
+use Closure;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
@@ -25,7 +26,11 @@ class CreateNewUser implements CreatesNewUsers
                 'required',
                 'string',
                 'regex:/^[A-Za-z0-9_-]{2,15}$/',
-                Rule::unique(User::class),
+                function (string $attribute, mixed $value, Closure $fail): void {
+                    if (is_string($value) && User::usernameIs($value)->exists()) {
+                        $fail('validation.unique')->translate();
+                    }
+                },
             ],
             'email' => [
                 'required',
