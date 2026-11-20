@@ -1,58 +1,72 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# cobrachicken
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+cobrachicken is a community news site for Canada in the style of Hacker News. Readers submit links and questions about Canadian news, upvote what they find worth reading, and discuss it in threaded comments. The name comes from "cobra chicken", the Canadian nickname for the Canada goose.
 
-## About Laravel
+It is a Laravel 13 app that uses Postgres for storage, Fortify for accounts, and jQuery for the parts of the page that update without a reload.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## What the site does
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+- The front page ranks stories with the Hacker News formula, so upvotes pull a story up and age pulls it down. `/newest` lists stories by submission time, `/ask` lists text posts, and `/comments` lists the latest comments.
+- A story can carry a province or territory tag. `/provinces` links to a ranked list for each of the 13.
+- A story can carry a politics tag. The **show politics** checkbox on the front page hides tagged stories there and remembers the choice in a cookie.
+- Upvotes, unvotes, replies, and collapsing a comment thread happen in place. Voting and replying also work with JavaScript turned off.
+- `/rss` is an RSS feed of the front page.
+- People sign in with a username. Uniqueness and login ignore case, so `Demo` and `demo` are the same account.
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+## Run it locally
 
-## Learning Laravel
+You need PHP 8.3 or later with the `pdo_pgsql` extension, Composer, Node 22.12 or later (Node 20.19 also works), and a running Postgres server.
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+1. Create two databases, one for the app and one for the tests:
 
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+	```sh
+	createdb cobrachicken
+	createdb cobrachicken_test
+	```
 
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
+2. Copy `.env.example` to `.env`. Set `DB_USERNAME` and `DB_PASSWORD` to your Postgres credentials.
+3. Install the dependencies, generate the app key, run the migrations, and build the front end:
 
-## Agentic Development
+	```sh
+	composer run setup
+	```
 
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+4. Fill the database with sample data:
 
-```bash
-composer require laravel/boost --dev
+	```sh
+	php artisan db:seed
+	```
 
-php artisan boost:install
+	The seeder creates 60 sample stories with comments and votes. Every sample link points to `example.ca` or `news.example.com`. It also creates the account `demo` with the password `password`.
+
+5. Start the development processes, including the app server and Vite:
+
+	```sh
+	composer run dev
+	```
+
+6. Open http://localhost:8000.
+
+Locally, Laravel writes password reset emails to `storage/logs/laravel.log` because `MAIL_MAILER` is `log`.
+
+## Run the tests
+
+The tests run on Postgres because the ranking query uses Postgres SQL. `phpunit.xml` points them at the `cobrachicken_test` database. They read the host, username, and password from your `.env`.
+
+```sh
+php artisan test --compact
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+## Where the code lives
 
-## Contributing
-
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
-
-## Code of Conduct
-
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
-
-## Security Vulnerabilities
-
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+- `app/Models/Story.php` holds the ranking, newest, ask, and politics query scopes.
+- `app/Models/Concerns/Votable.php` is shared by stories and comments. It records the author's own vote when an item is created and decides whether a viewer sees the upvote arrow or the unvote link.
+- `app/Actions/ToggleVote.php` adds or removes a vote. It changes points and karma only when a vote row was actually inserted or deleted, so sending the same vote twice has no extra effect.
+- `app/Enums/Province.php` is the one list of provinces and territories. Validation, the submit form, the province pages, and the FAQ all read from it.
+- `app/Support/PlainText.php` turns story text and comment bodies into HTML. It escapes HTML, splits paragraphs on blank lines, and links URLs.
+- `resources/js/app.js` holds all the jQuery.
+- `resources/css/app.css` holds the styles. They copy the Hacker News fonts, sizes, and colours, except for the red `#d52b1e` header.
 
 ## License
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+cobrachicken is open source under the [MIT license](LICENSE).
