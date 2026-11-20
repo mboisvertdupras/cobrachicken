@@ -35,6 +35,6 @@
         <p>The site owner removes spam and abuse. Please submit the original source when you can, use the article's own title, and keep comments civil.</p>
 
         <p><b>Is it open source?</b></p>
-        <p>Not at the moment.</p>
+        <p>Yes. The code is on GitHub at <a href="https://github.com/mboisvertdupras/cobrachicken">github.com/mboisvertdupras/cobrachicken</a> under the MIT license.</p>
     </div>
 </x-layout>
