@@ -20,9 +20,17 @@ $(document).on('submit', 'form.js-vote', function (event) {
 
     $.post($form.attr('action'), $form.serialize())
         .done(({ points, voted }) => {
-            $(`[data-points="${key}"]`).text(`${points} point${points === 1 ? '' : 's'}`);
-            $(`form.js-vote[data-votable="${key}"][data-how="up"]`).toggleClass('nosee', voted);
-            $(`form.js-vote[data-votable="${key}"][data-how="un"]`).prop('hidden', !voted);
+            $(`[data-points="${key}"]`).text(
+                `${points} point${points === 1 ? '' : 's'}`,
+            );
+            $(`form.js-vote[data-votable="${key}"][data-how="up"]`).toggleClass(
+                'nosee',
+                voted,
+            );
+            $(`form.js-vote[data-votable="${key}"][data-how="un"]`).prop(
+                'hidden',
+                !voted,
+            );
         })
         .fail(loginOnUnauthorized);
 });
@@ -36,7 +44,11 @@ $(document).on('click', '.togg', function (event) {
 
 $(document).on('click', '.js-reply', function (event) {
     event.preventDefault();
-    $(this).siblings('.replyform').toggleClass('open').find('textarea').trigger('focus');
+    $(this)
+        .siblings('.replyform')
+        .toggleClass('open')
+        .find('textarea')
+        .trigger('focus');
 });
 
 $(document).on('submit', 'form.js-comment', function (event) {
@@ -52,8 +64,12 @@ $(document).on('submit', 'form.js-comment', function (event) {
         })
         .fail((xhr) => {
             loginOnUnauthorized(xhr);
-            const errors = xhr.responseJSON?.errors ?? { body: ['Something went wrong. Please try again.'] };
-            Object.values(errors).flat().forEach((message) => $('<p>').text(message).appendTo($errors));
+            const errors = xhr.responseJSON?.errors ?? {
+                body: ['Something went wrong. Please try again.'],
+            };
+            Object.values(errors)
+                .flat()
+                .forEach((message) => $('<p>').text(message).appendTo($errors));
         });
 });
 
