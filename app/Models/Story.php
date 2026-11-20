@@ -17,6 +17,10 @@ class Story extends Model
     /** @use HasFactory<StoryFactory> */
     use HasFactory, Votable;
 
+    private const RANK_GRAVITY = 1.8;
+
+    private const RANK_AGE_OFFSET_HOURS = 2;
+
     /**
      * @return array<string, string>
      */
@@ -33,12 +37,12 @@ class Story extends Model
         return $this->hasMany(Comment::class);
     }
 
-    /**
-     * Hacker News gravity: points pull a story up, age in hours pulls it down.
-     */
     public function scopeRanked(Builder $query): void
     {
-        $query->orderByRaw('(points - 1) / power(extract(epoch from (now() - created_at)) / 3600 + 2, 1.8) desc')
+        $query->orderByRaw(
+            '(points - 1) / power(extract(epoch from (now() - created_at)) / 3600 + ?, ?) desc',
+            [self::RANK_AGE_OFFSET_HOURS, self::RANK_GRAVITY],
+        )
             ->orderByDesc('id');
     }
 

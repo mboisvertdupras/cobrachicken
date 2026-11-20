@@ -12,9 +12,6 @@ use Illuminate\Support\Facades\DB;
 class ToggleVote
 {
     /**
-     * Converge the user's vote on the item to the wanted state. Counters move only
-     * when a vote row is actually inserted or deleted, so repeats are no-ops.
-     *
      * @throws AuthorizationException
      */
     public function handle(User $user, Story|Comment $votable, bool $up): void

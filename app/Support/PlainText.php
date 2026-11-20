@@ -8,9 +8,6 @@ class PlainText
 {
     private const URL_PATTERN = '~(https?://[^\s<>"\']*[^\s<>"\'.,;:!?)\]])~i';
 
-    /**
-     * Escape user text, split paragraphs on blank lines, and autolink http(s) URLs.
-     */
     public static function format(string $text): HtmlString
     {
         $paragraphs = preg_split('/\R\s*\R/', trim($text));

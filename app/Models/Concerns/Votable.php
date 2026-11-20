@@ -9,9 +9,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 /**
- * Items with a `points` counter that always equals their number of vote rows.
- * The author's own vote is recorded on creation, so points start at 1.
- *
  * @property bool|null $voted
  */
 trait Votable
@@ -41,8 +38,6 @@ trait Votable
     }
 
     /**
-     * The vote control the viewer sees: an up arrow, an unvote link, or nothing.
-     *
      * @return 'up'|'un'|null
      */
     public function voteControlFor(?User $viewer): ?string
