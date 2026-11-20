@@ -15,7 +15,7 @@ It is a Laravel 13 app that uses Postgres for storage, Fortify for accounts, and
 
 ## Run it locally
 
-You need PHP 8.3 or later with the `pdo_pgsql` extension, Composer, Node 22.12 or later (Node 20.19 also works), and a running Postgres server.
+You need PHP 8.3 or later with the `pdo_pgsql` extension, Composer, Node 22.18 or later in the 22 line, 24.11 or later in the 24 line, or Node 26 and later, and a running Postgres server.
 
 1. Create two databases, one for the app and one for the tests:
 
