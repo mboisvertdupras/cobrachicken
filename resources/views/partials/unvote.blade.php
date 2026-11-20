@@ -5,7 +5,7 @@
             @method('DELETE')
             <input type="hidden" name="type" value="{{ $item->getMorphClass() }}">
             <input type="hidden" name="id" value="{{ $item->id }}">
-            | <button type="submit" class="linkbutton">unvote</button>
+            | <button type="submit" class="cursor-pointer hover:text-red-700 hover:underline">unvote</button>
         </form>
     @endif
 @endauth

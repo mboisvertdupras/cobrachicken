@@ -1,15 +1,22 @@
 <x-layout title="Reset password">
     <x-errors />
 
-    <b>Choose a new password</b>
-    <form method="POST" action="{{ route('password.update') }}" class="authform">
+    <h2 class="mb-3 text-base font-semibold text-stone-900">Choose a new password</h2>
+    <form method="POST" action="{{ route('password.update') }}" class="mb-6 max-w-sm space-y-3">
         @csrf
         <input type="hidden" name="token" value="{{ $request->route('token') }}">
-        <table>
-            <tr><td>email:</td><td><input type="email" name="email" value="{{ old('email', $request->email) }}" size="20" autocomplete="email"></td></tr>
-            <tr><td>password:</td><td><input type="password" name="password" size="20" autocomplete="new-password" autofocus></td></tr>
-            <tr><td>confirm:</td><td><input type="password" name="password_confirmation" size="20" autocomplete="new-password"></td></tr>
-        </table>
-        <input type="submit" value="change password">
+            <label class="block">
+                <span class="mb-1 block text-xs font-medium text-stone-700">email</span>
+                <input type="email" name="email" value="{{ old('email', $request->email) }}" class="block w-full rounded-md border border-stone-300 px-3 py-1.5 text-stone-900 focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-500/40" autocomplete="email">
+            </label>
+            <label class="block">
+                <span class="mb-1 block text-xs font-medium text-stone-700">password</span>
+                <input type="password" name="password" class="block w-full rounded-md border border-stone-300 px-3 py-1.5 text-stone-900 focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-500/40" autocomplete="new-password" autofocus>
+            </label>
+            <label class="block">
+                <span class="mb-1 block text-xs font-medium text-stone-700">confirm</span>
+                <input type="password" name="password_confirmation" class="block w-full rounded-md border border-stone-300 px-3 py-1.5 text-stone-900 focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-500/40" autocomplete="new-password">
+            </label>
+        <input type="submit" value="change password" class="cursor-pointer rounded-md bg-red-600 px-3 py-1.5 font-medium text-white hover:bg-red-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2">
     </form>
 </x-layout>
