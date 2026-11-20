@@ -65,7 +65,7 @@ php artisan test --compact
 - `app/Enums/Province.php` is the one list of provinces and territories. Validation, the submit form, the province pages, and the FAQ all read from it.
 - `app/Support/PlainText.php` turns story text and comment bodies into HTML. It escapes HTML, splits paragraphs on blank lines, and links URLs.
 - `resources/js/app.js` holds all the jQuery.
-- `resources/css/app.css` holds the styles. They copy the Hacker News fonts, sizes, and colours, except for the red `#d52b1e` header.
+- The site is styled with Tailwind utility classes in the Blade views. `resources/css/app.css` holds only the few rules that the jQuery toggles (`.nosee`, `.replyform`, `.coll`), and shared form controls live in `resources/views/components/`.
 
 ## License
 

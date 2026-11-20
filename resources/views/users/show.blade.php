@@ -1,21 +1,22 @@
 <x-layout :title="'Profile: '.$user->username">
-    <table class="profile">
-        <tr><td>user:</td><td>{{ $user->username }}</td></tr>
-        <tr><td>created:</td><td>{{ $user->created_at->toFormattedDateString() }}</td></tr>
-        <tr><td>karma:</td><td>{{ $user->karma }}</td></tr>
-        <tr><td valign="top">about:</td><td>
+    <dl class="grid max-w-xl grid-cols-[6rem_1fr] gap-y-2">
+        <dt class="text-stone-500">user</dt><dd class="font-medium text-stone-900">{{ $user->username }}</dd>
+        <dt class="text-stone-500">created</dt><dd>{{ $user->created_at->toFormattedDateString() }}</dd>
+        <dt class="text-stone-500">karma</dt><dd>{{ $user->karma }}</dd>
+        <dt class="text-stone-500">about</dt>
+        <dd>
             @if (auth()->user()?->is($user))
-                <form method="POST" action="{{ route('users.update') }}">
+                <form method="POST" action="{{ route('users.update') }}" class="space-y-2">
                     @csrf
                     @method('PATCH')
-                    <textarea name="about" rows="5" cols="60">{{ old('about', $user->about) }}</textarea>
-                    <br><input type="submit" value="update">
+                    <x-input as="textarea" name="about" rows="5">{{ old('about', $user->about) }}</x-input>
+                    <x-button>update</x-button>
                 </form>
             @elseif ($user->about)
-                <div class="comment">{{ App\Support\PlainText::format($user->about) }}</div>
+                <div class="comment space-y-2 text-stone-900 [&_a]:underline">{{ App\Support\PlainText::format($user->about) }}</div>
             @endif
-        </td></tr>
-        <tr><td></td><td><a href="{{ route('users.submissions', $user) }}">submissions</a></td></tr>
-        <tr><td></td><td><a href="{{ route('users.comments', $user) }}">comments</a></td></tr>
-    </table>
+        </dd>
+        <dt></dt><dd><a href="{{ route('users.submissions', $user) }}" class="text-red-700 hover:underline">submissions</a></dd>
+        <dt></dt><dd><a href="{{ route('users.comments', $user) }}" class="text-red-700 hover:underline">comments</a></dd>
+    </dl>
 </x-layout>
