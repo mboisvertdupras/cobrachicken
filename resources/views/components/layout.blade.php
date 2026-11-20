@@ -11,11 +11,10 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="bg-stone-100 font-sans text-sm text-stone-600 antialiased">
-<div class="mx-auto max-w-4xl bg-white sm:my-4 sm:overflow-hidden sm:rounded-lg sm:shadow-sm sm:ring-1 sm:ring-stone-200">
+<div class="mx-auto max-w-4xl bg-white sm:my-4 sm:overflow-hidden sm:shadow-sm sm:ring-1 sm:ring-stone-200">
     <header class="flex flex-wrap items-center gap-x-3 gap-y-1 bg-red-600 px-3 py-2 text-white">
-        <a href="{{ route('home') }}" class="flex size-6 items-center justify-center rounded border border-white text-sm font-bold focus:outline-none focus-visible:ring-2 focus-visible:ring-white">C</a>
+        <a href="{{ route('home') }}" class="flex items-center gap-2 font-bold focus:outline-none focus-visible:ring-2 focus-visible:ring-white"><span class="flex size-6 items-center justify-center border border-white text-sm">C</span><span class="hover:underline">{{ config('app.name') }}</span></a>
         <nav class="flex flex-wrap items-center gap-x-2 gap-y-1">
-            <a href="{{ route('home') }}" class="mr-1 font-bold hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-white">{{ config('app.name') }}</a>
             <a href="{{ route('newest') }}" class="hover:underline">new</a>
             <span class="text-red-300">|</span>
             <a href="{{ route('comments.index') }}" class="hover:underline">comments</a>

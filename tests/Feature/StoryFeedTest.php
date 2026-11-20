@@ -95,3 +95,17 @@ it('hides the vote arrow from the author and shows unvote to a voter', function 
     $this->actingAs($author)->get('/')->assertDontSee('title="upvote"', false)->assertDontSee('unvote');
     $this->actingAs($voter)->get('/')->assertSee('unvote');
 });
+
+it('marks the unvote form hidden on stories the viewer has not voted on', function () {
+    $viewer = User::factory()->create();
+    $voted = Story::factory()->create();
+    $unvoted = Story::factory()->create();
+    $voted->votes()->create(['user_id' => $viewer->id]);
+
+    $html = $this->actingAs($viewer)->get('/')->getContent();
+
+    expect(preg_match_all('/<form[^>]*data-how="un"[^>]*>/', $html, $forms))->toBe(2);
+    $hidden = collect($forms[0])->filter(fn ($form) => str_contains($form, ' hidden'));
+    expect($hidden)->toHaveCount(1)
+        ->and($hidden->first())->toContain($unvoted->getMorphClass().'-'.$unvoted->id);
+});

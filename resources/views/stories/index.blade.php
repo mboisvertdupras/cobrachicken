@@ -1,7 +1,7 @@
 <x-layout :title="$title ?? null">
     @isset($showPolitics)
         <div class="mb-4 text-xs">
-            <label class="inline-flex cursor-pointer items-center gap-1.5"><input type="checkbox" id="show-politics" class="size-4 rounded border-stone-300 accent-red-600 focus:ring-2 focus:ring-red-500" @checked($showPolitics)> show politics</label>
+            <label class="inline-flex cursor-pointer items-center gap-1.5"><x-checkbox id="show-politics" :checked="$showPolitics" /> show politics</label>
         </div>
     @endisset
 

@@ -7,16 +7,16 @@
         <input type="hidden" name="token" value="{{ $request->route('token') }}">
             <label class="block">
                 <span class="mb-1 block text-xs font-medium text-stone-700">email</span>
-                <input type="email" name="email" value="{{ old('email', $request->email) }}" class="block w-full rounded-md border border-stone-300 px-3 py-1.5 text-stone-900 focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-500/40" autocomplete="email">
+                <input type="email" name="email" value="{{ old('email', $request->email) }}" class="block w-full border border-stone-300 px-3 py-1.5 text-stone-900 focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-500/40" autocomplete="email">
             </label>
             <label class="block">
                 <span class="mb-1 block text-xs font-medium text-stone-700">password</span>
-                <input type="password" name="password" class="block w-full rounded-md border border-stone-300 px-3 py-1.5 text-stone-900 focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-500/40" autocomplete="new-password" autofocus>
+                <x-input type="password" name="password" autocomplete="new-password" autofocus />
             </label>
             <label class="block">
                 <span class="mb-1 block text-xs font-medium text-stone-700">confirm</span>
-                <input type="password" name="password_confirmation" class="block w-full rounded-md border border-stone-300 px-3 py-1.5 text-stone-900 focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-500/40" autocomplete="new-password">
+                <x-input type="password" name="password_confirmation" autocomplete="new-password" />
             </label>
-        <input type="submit" value="change password" class="cursor-pointer rounded-md bg-red-600 px-3 py-1.5 font-medium text-white hover:bg-red-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2">
+        <x-button>change password</x-button>
     </form>
 </x-layout>

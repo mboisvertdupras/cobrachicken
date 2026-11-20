@@ -9,8 +9,8 @@
                 <form method="POST" action="{{ route('users.update') }}" class="space-y-2">
                     @csrf
                     @method('PATCH')
-                    <textarea name="about" rows="5" class="block w-full rounded-md border border-stone-300 px-3 py-1.5 text-stone-900 focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-500/40">{{ old('about', $user->about) }}</textarea>
-                    <input type="submit" value="update" class="cursor-pointer rounded-md bg-red-600 px-3 py-1.5 font-medium text-white hover:bg-red-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2">
+                    <x-input as="textarea" name="about" rows="5">{{ old('about', $user->about) }}</x-input>
+                    <x-button>update</x-button>
                 </form>
             @elseif ($user->about)
                 <div class="comment space-y-2 text-stone-900 [&_a]:underline">{{ App\Support\PlainText::format($user->about) }}</div>

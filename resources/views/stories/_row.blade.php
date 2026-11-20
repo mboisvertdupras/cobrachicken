@@ -10,10 +10,10 @@
                 <span class="text-xs text-stone-500">({{ $story->domain() }})</span>
             @endif
             @if ($story->province)
-                <a href="{{ route('provinces.show', $story->province) }}" class="rounded bg-red-50 px-1 text-xs font-medium text-red-700 hover:bg-red-100" title="{{ $story->province->label() }}">{{ $story->province->value }}</a>
+                <a href="{{ route('provinces.show', $story->province) }}" class="bg-red-50 px-1 text-xs font-medium text-red-700 hover:bg-red-100" title="{{ $story->province->label() }}">{{ $story->province->value }}</a>
             @endif
             @if ($story->is_political)
-                <span class="rounded bg-stone-100 px-1 text-xs font-medium text-stone-600">politics</span>
+                <span class="bg-stone-100 px-1 text-xs font-medium text-stone-600">politics</span>
             @endif
         </div>
         <div class="text-xs text-stone-500">
