@@ -12,6 +12,12 @@ it('ranks a fresh high-point story above an older one', function () {
     $this->get('/')->assertOk()->assertSeeInOrder([$fresh->title, $old->title]);
 });
 
+it('ranks a story created in the future without erroring', function () {
+    $story = Story::factory()->create(['title' => 'Future story', 'created_at' => now()->addHours(6)]);
+
+    $this->get('/')->assertOk()->assertSee($story->title);
+});
+
 it('lists the newest stories first', function () {
     Story::factory()->create(['title' => 'Yesterday story', 'points' => 50, 'created_at' => now()->subDay()]);
     Story::factory()->create(['title' => 'Just now story', 'created_at' => now()]);
