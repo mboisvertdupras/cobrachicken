@@ -40,7 +40,7 @@ class Story extends Model
     public function scopeRanked(Builder $query): void
     {
         $query->orderByRaw(
-            '(points - 1) / power(extract(epoch from (now() - created_at)) / 3600 + ?, ?) desc',
+            '(points - 1) / power(greatest(extract(epoch from (now() - created_at)) / 3600, 0) + ?, ?) desc',
             [self::RANK_AGE_OFFSET_HOURS, self::RANK_GRAVITY],
         )
             ->orderByDesc('id');
