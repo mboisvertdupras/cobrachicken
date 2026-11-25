@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Actions\SubmitStory;
 use App\Enums\Province;
+use App\Jobs\PostNewsStory;
 use App\Models\Story;
 use App\Models\User;
 use App\Support\FeedParser;
@@ -26,12 +27,12 @@ use Throwable;
 #[Signature('news:fetch
     {--limit= : Most stories to post in this run (default: news.max_stories_per_run)}
     {--per-feed= : Most stories to post from one feed in this run (default: news.max_stories_per_feed)}')]
-#[Description('Post new stories from the Canadian news feeds in config/news.php')]
+#[Description('Queue new stories from the Canadian news feeds in config/news.php, each posted after a random delay')]
 class FetchNews extends Command
 {
     private const TITLE_MAX_LENGTH = 80;
 
-    public function handle(FeedParser $parser, SubmitStory $submitStory): int
+    public function handle(FeedParser $parser): int
     {
         $username = (string) config('news.poster_username');
         $poster = User::usernameIs($username)->first();
@@ -97,17 +98,19 @@ class FetchNews extends Command
             'province' => count($candidate['provinces']) === 1 ? reset($candidate['provinces']) : null,
         ], $candidatesByUrl);
 
-        $posted = 0;
+        $picked = array_slice($this->spreadAcrossFeeds($candidatesByUrl, $perFeed), 0, $limit);
+        $delays = $this->postingDelays(count($picked), (int) config('news.post_delay_max_minutes') * 60);
 
-        foreach (array_slice($this->spreadAcrossFeeds($candidatesByUrl, $perFeed), 0, $limit) as $candidate) {
-            $submitStory->handle($poster, $this->storyAttributes($candidate));
-            $posted++;
+        foreach ($picked as $index => $candidate) {
+            $postAt = CarbonImmutable::now()->addSeconds($delays[$index]);
+            PostNewsStory::dispatch($this->storyAttributes($candidate))->delay($postAt);
 
             $tags = array_filter([$candidate['province']?->value, $candidate['is_political'] ? 'politics' : null]);
-            $this->line("Posted [{$candidate['feed']}]".($tags ? ' ['.implode(', ', $tags).']' : '')." {$candidate['title']}");
+            $this->line("Queued [{$candidate['feed']}]".($tags ? ' ['.implode(', ', $tags).']' : '')." {$candidate['title']} (in ".intdiv($delays[$index], 60).'m '.($delays[$index] % 60)."s, at {$postAt->format('H:i:s')})");
         }
 
-        $this->info("Posted {$posted} new ".Str::plural('story', $posted).' from '.(count($feeds) - $failedFeeds).' of '.count($feeds).' feeds.');
+        $queued = count($picked);
+        $this->info("Queued {$queued} new ".Str::plural('story', $queued).' from '.(count($feeds) - $failedFeeds).' of '.count($feeds).' feeds.');
 
         return $feeds !== [] && $failedFeeds === count($feeds) ? self::FAILURE : self::SUCCESS;
     }
@@ -167,7 +170,7 @@ class FetchNews extends Command
                     break;
                 }
 
-                if ($this->alreadyPosted($candidate['url']) || Validator::make($this->storyAttributes($candidate), SubmitStory::rules())->fails()) {
+                if (Story::isUrlPosted($candidate['url']) || Validator::make($this->storyAttributes($candidate), SubmitStory::rules())->fails()) {
                     continue;
                 }
 
@@ -181,14 +184,29 @@ class FetchNews extends Command
             ->all();
     }
 
-    private function alreadyPosted(string $normalizedUrl): bool
+    /**
+     * Distinct random delays in seconds, from 0 to $maxSeconds, in ascending order so the
+     * first pick posts first. The default window ends before the next hourly run starts.
+     * Delays repeat only when there are more stories than seconds in the window.
+     *
+     * @return list<int>
+     */
+    private function postingDelays(int $count, int $maxSeconds): array
     {
-        $base = StoryUrl::withoutQuery($normalizedUrl);
+        $maxSeconds = max(0, $maxSeconds);
+        $delays = [];
 
-        return Story::query()
-            ->where('url', 'ilike', addcslashes($base, '\\%_').'%')
-            ->pluck('url')
-            ->contains(fn (string $url): bool => StoryUrl::normalize($url) === $normalizedUrl);
+        while (count($delays) < $count) {
+            $delay = random_int(0, $maxSeconds);
+
+            if (! in_array($delay, $delays, true) || count($delays) > $maxSeconds) {
+                $delays[] = $delay;
+            }
+        }
+
+        sort($delays);
+
+        return $delays;
     }
 
     /**

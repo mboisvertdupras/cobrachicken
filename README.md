@@ -66,12 +66,14 @@ php artisan test --compact
 - Items older than the maximum age, items with no date, and items without a usable title or http(s) link are skipped. Titles are decoded and cut to fit the 80-character limit.
 - A feed that errors, times out, or is not a feed is logged and skipped. The command fails only when every feed fails.
 - Each run posts at most `NEWS_MAX_STORIES_PER_RUN` stories and at most `NEWS_MAX_STORIES_PER_FEED` from one feed, picking each feed's newest stories in turn so that one feed cannot fill the front page. `--limit=` and `--per-feed=` override the caps for a single run.
+- The command does not post the stories itself. It queues one `PostNewsStory` job per story (`app/Jobs/PostNewsStory.php`), each with a different random delay of up to `NEWS_POST_DELAY_MAX_MINUTES`, so a run's stories appear one at a time over the hour instead of all at the same second. When a job runs, it checks again that the link is not already on the site, and it skips the story with a log entry if the link is there or the poster account is gone.
 
 | Variable | Default | Meaning |
 | --- | --- | --- |
 | `NEWS_POSTER_USERNAME` | `mbd` | The account the stories are posted as. Matched without regard to case. |
 | `NEWS_MAX_STORIES_PER_RUN` | `5` | Most stories posted per run. |
 | `NEWS_MAX_STORIES_PER_FEED` | `2` | Most stories posted from one feed per run. |
+| `NEWS_POST_DELAY_MAX_MINUTES` | `59` | Longest random delay before a queued story is posted. Keep it under 60 so a run's stories are posted before the next hourly run. |
 | `NEWS_MAX_AGE_HOURS` | `48` | Items published longer ago than this are skipped. |
 | `NEWS_TIMEOUT_SECONDS` | `10` | Connect and response timeout for each feed. |
 | `NEWS_USER_AGENT` | `cobrachicken/1.0` | User-Agent sent to the feeds. CBC's CDN refuses some agents, including Guzzle's default and agents that contain a `+https://` contact link. |
@@ -86,12 +88,20 @@ The command is scheduled to run hourly, and a run is skipped if the previous one
 
 Alternatively, keep `php artisan schedule:work` running under a process supervisor.
 
+The stories are posted by queued jobs, so production also needs a queue worker running under a process supervisor, next to the scheduler:
+
+```sh
+php artisan queue:work
+```
+
+The delays need a queue driver that supports them, such as `QUEUE_CONNECTION=database` (the default in `.env.example`) or `redis`. With `QUEUE_CONNECTION=sync`, which the tests use, every job runs at once and the delays are ignored, so all the stories get the same timestamp again.
+
 ## Where the code lives
 
 - `app/Models/Story.php` holds the ranking, newest, ask, and politics query scopes.
 - `app/Models/Concerns/Votable.php` is shared by stories and comments. It records the author's own vote when an item is created and decides whether a viewer sees the upvote arrow or the unvote link.
 - `app/Actions/SubmitStory.php` holds the story validation rules and creates a story. The submit form and the news fetcher both use it.
-- `app/Console/Commands/FetchNews.php` is the news fetcher. `app/Support/FeedParser.php` reads RSS and Atom, and `app/Support/StoryUrl.php` normalizes links for duplicate checks.
+- `app/Console/Commands/FetchNews.php` is the news fetcher. It queues `app/Jobs/PostNewsStory.php`, which posts each story, and both check for duplicates with `Story::isUrlPosted()`. `app/Support/FeedParser.php` reads RSS and Atom, and `app/Support/StoryUrl.php` normalizes links for duplicate checks.
 - `app/Actions/ToggleVote.php` adds or removes a vote. It changes points and karma only when a vote row was actually inserted or deleted, so sending the same vote twice has no extra effect.
 - `app/Enums/Province.php` is the one list of provinces and territories. Validation, the submit form, the province pages, and the FAQ all read from it.
 - `app/Support/PlainText.php` turns story text and comment bodies into HTML. It escapes HTML, splits paragraphs on blank lines, and links URLs.

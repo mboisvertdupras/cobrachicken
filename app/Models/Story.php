@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\Province;
 use App\Models\Concerns\Votable;
+use App\Support\StoryUrl;
 use Database\Factories\StoryFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
@@ -66,6 +67,20 @@ class Story extends Model
     public function scopeForListing(Builder $query, ?User $viewer): void
     {
         $query->with('user')->withVoteBy($viewer);
+    }
+
+    /**
+     * Whether a story already links to this url, compared as StoryUrl::normalize() would.
+     * The news fetcher checks this when it picks stories and again when it posts them.
+     */
+    public static function isUrlPosted(string $normalizedUrl): bool
+    {
+        $base = StoryUrl::withoutQuery($normalizedUrl);
+
+        return static::query()
+            ->where('url', 'ilike', addcslashes($base, '\\%_').'%')
+            ->pluck('url')
+            ->contains(fn (string $url): bool => StoryUrl::normalize($url) === $normalizedUrl);
     }
 
     public function domain(): ?string

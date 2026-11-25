@@ -21,6 +21,15 @@ return [
 
     'max_stories_per_feed' => (int) env('NEWS_MAX_STORIES_PER_FEED', 2),
 
+    /*
+    | Each run queues its stories with distinct random delays of up to this many
+    | minutes, so they appear one by one. Keep it under an hour so a run's posts
+    | finish before the next hourly run. Delays need a queue worker and a
+    | non-sync QUEUE_CONNECTION; the sync driver posts everything immediately.
+    */
+
+    'post_delay_max_minutes' => (int) env('NEWS_POST_DELAY_MAX_MINUTES', 59),
+
     'max_age_hours' => (int) env('NEWS_MAX_AGE_HOURS', 48),
 
     'timeout_seconds' => (int) env('NEWS_TIMEOUT_SECONDS', 10),
