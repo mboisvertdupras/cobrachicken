@@ -147,3 +147,14 @@ This project has domain-specific skills available in `**/skills/**`. You MUST ac
 - Run `vendor/bin/pest` to call the test runner directly. It accepts the same file path and `--filter=testName` arguments.
 
 </laravel-boost-guidelines>
+
+## Setting up a worktree on the agent box
+
+These steps are not in the README and were needed on the shared agent box, where Postgres listens only on a Unix socket.
+
+- In `.env`, set `DB_HOST=/var/run/postgresql`, `DB_USERNAME=ubuntu`, and leave `DB_PASSWORD` empty. TCP connections are rejected.
+- Give each worktree its own databases, named after the worktree with underscores: for example `createdb cobrachicken_news_fetcher` for the app (`DB_DATABASE` in `.env`) and `createdb cobrachicken_news_fetcher_test` for the tests. Drop them when the worktree goes.
+- `phpunit.xml` hard-codes `DB_DATABASE=cobrachicken_test` without `force`, so a shell variable overrides it. Run the tests against the worktree's own test database with `DB_DATABASE=cobrachicken_news_fetcher_test php artisan test --compact`. Do not share `cobrachicken_test` between worktrees.
+- Set `APP_URL` to the worktree's preview URL (run `preview-url` in the worktree).
+- `npm install` rewrites the `name` field of `package-lock.json` to the worktree's folder name. Run `git checkout package-lock.json` afterwards so the lockfile keeps the name `cobrachicken`.
+- To try `php artisan news:fetch` locally, the poster account must exist. Create one with a random password, for example `php artisan tinker --execute 'App\Models\User::factory()->create(["username" => "mbd", "email" => "mbd@example.ca", "password" => Str::random(64)]);'`.
