@@ -1,12 +1,14 @@
 <?php
 
 use App\Enums\Province;
+use App\Jobs\PostNewsStory;
 use App\Models\Story;
 use App\Models\User;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Queue;
 
 /**
  * @param  list<array{0: string, 1: string, 2?: Carbon|null}>  $items  title, link, and publication time (default: an hour ago)
@@ -45,6 +47,23 @@ function fakeFeeds(array $feeds): void
 beforeEach(function () {
     $this->poster = User::factory()->create(['username' => 'mbd']);
 });
+
+/*
+ * The command queues a PostNewsStory job per story. The tests run on the sync queue,
+ * which ignores the delays and runs each job at once, so most tests below check the
+ * stories that end up on the site. The tests that fake the queue check the delays.
+ */
+
+/**
+ * @return list<int> the delay of each queued PostNewsStory job, in seconds from now
+ */
+function queuedDelays(): array
+{
+    return Queue::pushed(PostNewsStory::class)
+        ->map(fn (PostNewsStory $job) => (int) now()->diffInSeconds($job->delay))
+        ->values()
+        ->all();
+}
 
 it('posts feed stories as the poster with the author vote', function () {
     fakeFeeds(['https://news.example.ca/rss' => ['body' => rssFeed([
@@ -167,7 +186,7 @@ it('does not repost on a second run', function () {
     ])]]);
 
     $this->artisan('news:fetch')->assertSuccessful();
-    $this->artisan('news:fetch')->expectsOutputToContain('Posted 0 new stories')->assertSuccessful();
+    $this->artisan('news:fetch')->expectsOutputToContain('Queued 0 new stories')->assertSuccessful();
 
     expect(Story::pluck('url')->sort()->values()->all())->toBe(['https://news.example.ca/two', 'https://www.cbc.ca/news/one']);
 });
@@ -273,7 +292,7 @@ it('keeps going when a feed errors or is not a feed', function () {
         ->expectsOutputToContain('Skipped feed Broken')
         ->expectsOutputToContain('Skipped feed Garbage')
         ->expectsOutputToContain('Skipped feed Html')
-        ->expectsOutputToContain('Posted 1 new story from 1 of 4 feeds.')
+        ->expectsOutputToContain('Queued 1 new story from 1 of 4 feeds.')
         ->assertSuccessful();
 
     expect(Story::sole()->title)->toBe('Still posted');
@@ -306,4 +325,56 @@ it('runs hourly without overlapping', function () {
     expect($event)->not->toBeNull()
         ->and($event->expression)->toBe('0 * * * *')
         ->and($event->withoutOverlapping)->toBeTrue();
+});
+
+it('queues one delayed job per picked story instead of posting inline', function () {
+    Queue::fake();
+    $this->freezeTime();
+    fakeFeeds(collect(range(1, 10))->mapWithKeys(fn (int $feed) => ["https://f{$feed}.example.ca/rss" => ['body' => rssFeed([
+        ["Story {$feed}", "https://f{$feed}.example.ca/story?utm_source=rss"],
+        ["Older {$feed}", "https://f{$feed}.example.ca/older", now()->subHours(2)],
+    ])]])->all());
+
+    $this->artisan('news:fetch', ['--limit' => 10, '--per-feed' => 1])
+        ->expectsOutputToContain('Queued 10 new stories from 10 of 10 feeds.')
+        ->assertSuccessful();
+
+    expect(Story::count())->toBe(0);
+    Queue::assertPushed(PostNewsStory::class, 10);
+    Queue::assertPushed(PostNewsStory::class, fn (PostNewsStory $job) => $job->attributes === [
+        'title' => 'Story 3',
+        'url' => 'https://f3.example.ca/story',
+        'province' => null,
+        'is_political' => false,
+    ]);
+
+    $delays = queuedDelays();
+    expect($delays)->each->toBeGreaterThanOrEqual(0)->toBeLessThanOrEqual(59 * 60)
+        ->and(array_unique($delays))->toHaveCount(10);
+});
+
+it('spreads the delays across the configured window', function () {
+    Queue::fake();
+    $this->freezeTime();
+    config(['news.post_delay_max_minutes' => 5]);
+    fakeFeeds(['https://news.example.ca/rss' => ['body' => rssFeed(
+        collect(range(1, 8))->map(fn (int $item) => ["Story {$item}", "https://news.example.ca/{$item}"])->all(),
+    )]]);
+
+    $this->artisan('news:fetch', ['--limit' => 8, '--per-feed' => 8])->assertSuccessful();
+
+    $delays = queuedDelays();
+    expect($delays)->toHaveCount(8)
+        ->each->toBeGreaterThanOrEqual(0)->toBeLessThanOrEqual(5 * 60)
+        ->and(array_unique($delays))->toHaveCount(8);
+});
+
+it('queues nothing when the poster account does not exist', function () {
+    Queue::fake();
+    config(['news.poster_username' => 'nobody_here']);
+    fakeFeeds(['https://news.example.ca/rss' => ['body' => rssFeed([['A story', 'https://news.example.ca/a']])]]);
+
+    $this->artisan('news:fetch')->assertFailed();
+
+    Queue::assertNothingPushed();
 });

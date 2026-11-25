@@ -158,3 +158,9 @@ These steps are not in the README and were needed on the shared agent box, where
 - Set `APP_URL` to the worktree's preview URL (run `preview-url` in the worktree).
 - `npm install` rewrites the `name` field of `package-lock.json` to the worktree's folder name. Run `git checkout package-lock.json` afterwards so the lockfile keeps the name `cobrachicken`.
 - To try `php artisan news:fetch` locally, the poster account must exist. Create one with a random password, for example `php artisan tinker --execute 'App\Models\User::factory()->create(["username" => "mbd", "email" => "mbd@example.ca", "password" => Str::random(64)]);'`.
+
+## News fetcher queue
+
+- `news:fetch` queues one `PostNewsStory` job per story with a random delay of up to `news.post_delay_max_minutes` (`NEWS_POST_DELAY_MAX_MINUTES`, default 59). The stories appear only once a worker runs the jobs.
+- Delays need a non-sync queue driver. With `QUEUE_CONNECTION=sync` (as in `phpunit.xml`) the jobs run at once and the delays are ignored. Production needs `QUEUE_CONNECTION=database` (or `redis`) and a running `php artisan queue:work` next to the scheduler.
+- To watch it locally, run `NEWS_POST_DELAY_MAX_MINUTES=1 php artisan news:fetch`, then `php artisan queue:work` for a minute or so, and stop the worker afterwards.
