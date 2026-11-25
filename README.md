@@ -57,10 +57,41 @@ The tests run on Postgres because the ranking query uses Postgres SQL. `phpunit.
 php artisan test --compact
 ```
 
+## News fetcher
+
+`php artisan news:fetch` gives the site fresh content. It reads the Canadian news RSS and Atom feeds listed in `config/news.php` (CBC national and regional, CTV, Global News, and several independent and northern outlets) and submits new stories through the same code path as the submit form, so each story starts with one point and its author's vote.
+
+- Each feed in `config/news.php` has a name, a url, an optional province, and a politics flag, and its stories get those tags. When the same link appears in several feeds, the story is tagged politics if any of them is a politics feed, and gets a province only if the feeds agree on one.
+- Links are compared without `utm_*` parameters, CBC's `cmp` parameter, or the fragment, so a story that is already on the site is not posted again, and neither is the same link from two feeds in one run.
+- Items older than the maximum age, items with no date, and items without a usable title or http(s) link are skipped. Titles are decoded and cut to fit the 80-character limit.
+- A feed that errors, times out, or is not a feed is logged and skipped. The command fails only when every feed fails.
+- Each run posts at most `NEWS_MAX_STORIES_PER_RUN` stories and at most `NEWS_MAX_STORIES_PER_FEED` from one feed, picking each feed's newest stories in turn so that one feed cannot fill the front page. `--limit=` and `--per-feed=` override the caps for a single run.
+
+| Variable | Default | Meaning |
+| --- | --- | --- |
+| `NEWS_POSTER_USERNAME` | `mbd` | The account the stories are posted as. Matched without regard to case. |
+| `NEWS_MAX_STORIES_PER_RUN` | `5` | Most stories posted per run. |
+| `NEWS_MAX_STORIES_PER_FEED` | `2` | Most stories posted from one feed per run. |
+| `NEWS_MAX_AGE_HOURS` | `48` | Items published longer ago than this are skipped. |
+| `NEWS_TIMEOUT_SECONDS` | `10` | Connect and response timeout for each feed. |
+| `NEWS_USER_AGENT` | `cobrachicken/1.0` | User-Agent sent to the feeds. CBC's CDN refuses some agents, including Guzzle's default and agents that contain a `+https://` contact link. |
+
+The poster account must already exist. The command never creates it and exits with an error when it is missing. Register the account through the site, or create it from `php artisan tinker` with a random password.
+
+The command is scheduled to run hourly, and a run is skipped if the previous one is still going. The schedule only runs if the server calls the Laravel scheduler, so production needs this cron entry:
+
+```cron
+* * * * * cd /path/to/cobrachicken && php artisan schedule:run >> /dev/null 2>&1
+```
+
+Alternatively, keep `php artisan schedule:work` running under a process supervisor.
+
 ## Where the code lives
 
 - `app/Models/Story.php` holds the ranking, newest, ask, and politics query scopes.
 - `app/Models/Concerns/Votable.php` is shared by stories and comments. It records the author's own vote when an item is created and decides whether a viewer sees the upvote arrow or the unvote link.
+- `app/Actions/SubmitStory.php` holds the story validation rules and creates a story. The submit form and the news fetcher both use it.
+- `app/Console/Commands/FetchNews.php` is the news fetcher. `app/Support/FeedParser.php` reads RSS and Atom, and `app/Support/StoryUrl.php` normalizes links for duplicate checks.
 - `app/Actions/ToggleVote.php` adds or removes a vote. It changes points and karma only when a vote row was actually inserted or deleted, so sending the same vote twice has no extra effect.
 - `app/Enums/Province.php` is the one list of provinces and territories. Validation, the submit form, the province pages, and the FAQ all read from it.
 - `app/Support/PlainText.php` turns story text and comment bodies into HTML. It escapes HTML, splits paragraphs on blank lines, and links URLs.

@@ -6,6 +6,7 @@ use App\Enums\Province;
 use App\Models\Story;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Support\Str;
 
 /**
  * @extends Factory<Story>
@@ -19,7 +20,7 @@ class StoryFactory extends Factory
     {
         return [
             'user_id' => User::factory(),
-            'title' => rtrim(fake()->sentence(6), '.'),
+            'title' => Str::limit(rtrim(fake()->sentence(6), '.'), 80, '', preserveWords: true),
             'url' => 'https://example.ca/'.fake()->slug(4),
             'text' => null,
             'province' => null,

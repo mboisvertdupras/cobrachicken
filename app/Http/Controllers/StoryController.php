@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\SubmitStory;
 use App\Enums\Province;
 use App\Http\Requests\StoreStoryRequest;
 use App\Models\Story;
@@ -65,9 +66,9 @@ class StoryController extends Controller
         return view('stories.create', ['provinces' => Province::cases()]);
     }
 
-    public function store(StoreStoryRequest $request): RedirectResponse
+    public function store(StoreStoryRequest $request, SubmitStory $submitStory): RedirectResponse
     {
-        $request->user()->stories()->create([
+        $submitStory->handle($request->user(), [
             ...$request->validated(),
             'is_political' => $request->boolean('is_political'),
         ]);
